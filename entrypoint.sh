@@ -59,13 +59,15 @@ if [ "$(id -u)" = "0" ]; then
   exec gosu "$STEAM_USER" "$0" "$@"
 fi
 
+echo "[entrypoint] Starting pulseaudio (system-less)..."
+pulseaudio --start || true
+
 echo "[entrypoint] Starting dbus if needed..."
 if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
   dbus-daemon --system --fork || true
 fi
 
 # Start Xorg with dummy/nvidia headless config
-echo "[entrypoint] Starting Xorg :0 ..."
 # -nolisten tcp avoids binding TCP
 # -noreset keeps X running
 Xorg :0 -config /etc/X11/xorg.conf -nolisten tcp -noreset >/home/steam/xorg.log 2>&1 &
@@ -92,7 +94,7 @@ if [ ! -x "$SUNSHINE_CMD" ]; then
 fi
 
 # Sunshine will create its config under /config if missing
-"$SUNSHINE_CMD" -c /config
+"$SUNSHINE_CMD" /config
 
 # If sunshine exits, keep container alive for debugging
 sleep infinity
