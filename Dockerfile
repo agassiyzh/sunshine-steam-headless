@@ -5,29 +5,47 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:0
 ENV SUNSHINE_CONFIG_DIR=/config
 
-# Install core deps
+# Install core dependencies and Sunshine
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates wget curl gnupg lsb-release \
-    xserver-xorg-core xinit x11-xserver-utils xserver-xorg-video-dummy \
-    dbus-x11 pulseaudio pulseaudio-utils alsa-utils \
-    libevdev2 libminiupnpc17 libayatana-appindicator3-1 libnotify4 \
-    ca-certificates unzip fonts-noto lsof procps fonts-noto-cjk \
+    ca-certificates \
+    wget \
+    curl \
+    gnupg \
+    lsb-release \
+    xserver-xorg-core \
+    xinit \
+    x11-xserver-utils \
+    xserver-xorg-video-dummy \
+    dbus-x11 \
+    pulseaudio \
+    pulseaudio-utils \
+    alsa-utils \
+    libevdev2 \
+    libminiupnpc17 \
+    libayatana-appindicator3-1 \
+    libnotify4 \
+    unzip \
+    fonts-noto \
+    lsof \
+    procps \
+    fonts-noto-cjk \
+    gosu \
+    jq \
+    && LATEST_TAG=$(curl -sL "https://api.github.com/repos/LizardByte/Sunshine/releases/latest" | jq -r '.tag_name') \
+    && SUNSHINE_DEB_URL="https://github.com/LizardByte/Sunshine/releases/download/${LATEST_TAG}/sunshine-ubuntu-24.04-amd64.deb" \
+    && wget -O /tmp/sunshine.deb "${SUNSHINE_DEB_URL}" \
+    && dpkg -i /tmp/sunshine.deb \
+    && rm /tmp/sunshine.deb \
     && rm -rf /var/lib/apt/lists/*
 
-# Optional: install steam-installer if you want Steam in container
-# (uncomment if you need Steam inside)
-RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y steam-installer && rm -rf /var/lib/apt/lists/*
-
-# Download and install Sunshine
-RUN set -eux; \
-    wget -O /tmp/sunshine.deb "${SUNSHINE_DEB_URL}"; \
-    dpkg -i /tmp/sunshine.deb; \
-    rm /tmp/sunshine.deb
-
-
-
-# 僅安裝 gosu，動態建用戶與目錄交由 entrypoint.sh 處理
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
+# Optional: Install Steam if INSTALL_STEAM is set to true
+ARG INSTALL_STEAM=true
+RUN if [ "$INSTALL_STEAM" = "true" ]; then \
+    dpkg --add-architecture i386 \
+    && apt-get update \
+    && apt-get install -y steam-installer \
+    && rm -rf /var/lib/apt/lists/*; \
+    fi
 
 # Copy xorg config and entrypoint
 COPY xorg.conf /etc/X11/xorg.conf
