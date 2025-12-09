@@ -24,6 +24,9 @@ RUN set -eux; \
     dpkg -i /tmp/sunshine.deb || apt-get -f install -y; \
     rm /tmp/sunshine.deb
 
+# Verify that sunshine was installed correctly and is executable
+RUN ls -l /usr/bin/sunshine && /usr/bin/sunshine --version
+
 
 
 # 僅安裝 gosu，動態建用戶與目錄交由 entrypoint.sh 處理

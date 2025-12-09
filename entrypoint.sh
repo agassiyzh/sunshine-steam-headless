@@ -34,6 +34,10 @@ set -euo pipefail
 #   echo "[entrypoint] 無法偵測宿主機 NVIDIA 驅動，請確認 nvidia-smi 可用。"
 # fi
 
+echo "[entrypoint] Creating dbus socket directory..."
+mkdir -p /run/dbus
+chown -R steam:steam /run/dbus
+
 echo "[entrypoint] Starting dbus if needed..."
 if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
   dbus-daemon --system --fork || true
@@ -66,7 +70,7 @@ fi
 echo "[entrypoint] Starting Xorg :0 ..."
 # -nolisten tcp avoids binding TCP
 # -noreset keeps X running
-Xorg :0 -config /etc/X11/xorg.conf -nolisten tcp -noreset >/var/log/xorg.log 2>&1 &
+Xorg :0 -config /etc/X11/xorg.conf -nolisten tcp -noreset >/home/steam/xorg.log 2>&1 &
 
 # Give Xorg a moment to initialize and let the driver bind
 sleep 2
