@@ -62,18 +62,16 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       # buildx 已經將映像導出到本地 docker，直接用 tag
-      - name: Tag image for test
-        run: |
-          docker tag latest sunshine-test:ci || docker tag ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest sunshine-test:ci || true
-
       - name: Run container as steam user
         run: |
+          # 取 meta 的第一個 tag（latest）
+          TAG=$(echo "${{ steps.meta.outputs.tags }}" | awk '{print $1}')
           docker run --rm \
             -e STEAM_UID=1234 -e STEAM_GID=1234 \
             -v $(pwd)/test-config:/config \
             -v $(pwd)/test-steam-home:/home/steam \
-            --name sunshine-test sunshine-test:ci \
-            bash -c 'id && ls -ld /config /home/steam && ps aux | grep sunshine'
+            --name sunshine-test "$TAG" \
+            bash -c 'id && ls -ld /config /home/steam && pgrep sunshine'
 
       - name: Check config and home permissions
         run: |
