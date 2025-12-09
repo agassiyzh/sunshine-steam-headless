@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && LATEST_TAG=$(curl -sL "https://api.github.com/repos/LizardByte/Sunshine/releases/latest" | jq -r '.tag_name') \
     && SUNSHINE_DEB_URL="https://github.com/LizardByte/Sunshine/releases/download/${LATEST_TAG}/sunshine-ubuntu-24.04-amd64.deb" \
     && wget -O /tmp/sunshine.deb "${SUNSHINE_DEB_URL}" \
-    && dpkg -i /tmp/sunshine.deb \
+    && apt-get install -y /tmp/sunshine.deb \
     && rm /tmp/sunshine.deb \
     && rm -rf /var/lib/apt/lists/*
 
