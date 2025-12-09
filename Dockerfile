@@ -24,8 +24,14 @@ RUN set -eux; \
     if [ -f /tmp/sunshine.deb ]; then dpkg -i /tmp/sunshine.deb || apt-get -f install -y; fi; \
     rm -f /tmp/sunshine.deb || true
 
-# Create config dir
-RUN mkdir -p ${SUNSHINE_CONFIG_DIR} && chmod 777 ${SUNSHINE_CONFIG_DIR}
+
+
+# 僅安裝 gosu，動態建用戶與目錄交由 entrypoint.sh 處理
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
+
+
+# 安裝 gosu 用於切換用戶
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
 
 # Copy xorg config and entrypoint
 COPY xorg.conf /etc/X11/xorg.conf

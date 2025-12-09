@@ -42,6 +42,26 @@ fi
 echo "[entrypoint] Starting pulseaudio (system-less)..."
 pulseaudio --start || true
 
+
+# 根據環境變數動態建立 steam 用戶並切換
+STEAM_UID=${STEAM_UID:-568}
+STEAM_GID=${STEAM_GID:-568}
+STEAM_USER=steam
+STEAM_HOME=/home/$STEAM_USER
+
+if [ "$(id -u)" = "0" ]; then
+  if ! getent group "$STEAM_GID" >/dev/null; then
+    groupadd -g "$STEAM_GID" "$STEAM_USER"
+  fi
+  if ! id -u "$STEAM_USER" >/dev/null 2>&1; then
+    useradd -m -u "$STEAM_UID" -g "$STEAM_GID" -s /bin/bash "$STEAM_USER"
+  fi
+  # 確保主目錄和 /config 權限正確
+  chown -R "$STEAM_UID:$STEAM_GID" "$STEAM_HOME" /config 2>/dev/null || true
+  echo "[entrypoint] 切換到 $STEAM_USER 用戶 (UID $STEAM_UID) 執行主流程..."
+  exec gosu "$STEAM_USER" "$0" "$@"
+fi
+
 # Start Xorg with dummy/nvidia headless config
 echo "[entrypoint] Starting Xorg :0 ..."
 # -nolisten tcp avoids binding TCP
@@ -56,7 +76,7 @@ echo "[entrypoint] DISPLAY=$DISPLAY"
 
 # Optional: start Steam Big Picture (uncomment if Steam is installed and you want auto-start)
 # echo "[entrypoint] Starting Steam (Big Picture)..."
-# su -s /bin/bash -c "DISPLAY=:0 steam -tenfoot &" $(whoami) || true
+# steam -tenfoot &
 
 # Start Sunshine pointing to /config
 echo "[entrypoint] Starting Sunshine..."

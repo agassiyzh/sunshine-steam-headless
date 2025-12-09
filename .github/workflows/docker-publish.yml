@@ -1,3 +1,25 @@
+  test-image:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull image (latest)
+        run: docker pull ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest
+
+      - name: Run container as steam user
+        run: |
+          docker run --rm \
+            -e STEAM_UID=1234 -e STEAM_GID=1234 \
+            -v $(pwd)/test-config:/config \
+            -v $(pwd)/test-steam-home:/home/steam \
+            --name sunshine-test ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest \
+            bash -c 'id && ls -ld /config /home/steam && ps aux | grep sunshine'
+
+      - name: Check config and home permissions
+        run: |
+          stat test-config | grep 'Uid:.*1234' && stat test-steam-home | grep 'Uid:.*1234'
+
+      - name: Clean up test volumes
+        run: rm -rf test-config test-steam-home
 name: Build and publish Docker image
 
 on:
