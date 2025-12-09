@@ -84,9 +84,9 @@ SUNSHINE_CMD="/usr/bin/sunshine"
 
 # Check if Sunshine is installed and executable
 if [ ! -x "$SUNSHINE_CMD" ]; then
-    echo "[entrypoint] ERROR: Sunshine executable not found or not executable at $SUNSHINE_CMD."
-    echo "[entrypoint] Please check if the Sunshine .deb package was installed correctly in the Dockerfile."
-    sleep infinity # Keep container alive for debugging
+    echo "[entrypoint] ERROR: Sunshine executable not found or not executable at $SUNSHINE_CMD." >&2
+    echo "[entrypoint] Please check if the Sunshine .deb package was installed correctly in the Dockerfile." >&2
+    exit 1
 fi
 
 # Sunshine will create its config under /config if missing
