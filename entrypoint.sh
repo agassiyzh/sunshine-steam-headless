@@ -34,15 +34,6 @@ set -euo pipefail
 #   echo "[entrypoint] 無法偵測宿主機 NVIDIA 驅動，請確認 nvidia-smi 可用。"
 # fi
 
-echo "[entrypoint] Creating dbus socket directory..."
-mkdir -p /run/dbus
-chown -R steam:steam /run/dbus
-
-echo "[entrypoint] Starting dbus if needed..."
-if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
-  dbus-daemon --system --fork || true
-fi
-
 echo "[entrypoint] Starting pulseaudio (system-less)..."
 pulseaudio --start || true
 
@@ -58,12 +49,19 @@ if [ "$(id -u)" = "0" ]; then
     groupadd -g "$STEAM_GID" "$STEAM_USER"
   fi
   if ! id -u "$STEAM_USER" >/dev/null 2>&1; then
-    useradd -m -u "$STEAM_UID" -g "$STEAM_GID" -s /bin/bash "$STEAM_USER"
+    useradd -m -u "$STEAM_UID" -g "$STEAM_GID" "$STEAM_USER" -s /bin/bash
   fi
   # 確保主目錄和 /config 權限正確
+  mkdir -p /run/dbus
   chown -R "$STEAM_UID:$STEAM_GID" "$STEAM_HOME" /config 2>/dev/null || true
+  chown -R "$STEAM_UID:$STEAM_GID" /run/dbus 2>/dev/null || true
   echo "[entrypoint] 切換到 $STEAM_USER 用戶 (UID $STEAM_UID) 執行主流程..."
   exec gosu "$STEAM_USER" "$0" "$@"
+fi
+
+echo "[entrypoint] Starting dbus if needed..."
+if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
+  dbus-daemon --system --fork || true
 fi
 
 # Start Xorg with dummy/nvidia headless config
