@@ -9,15 +9,9 @@ services:
       - DISPLAY=:0
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-    devices:
-      - /dev/dri:/dev/dri
-      - /dev/nvidia0:/dev/nvidia0
-      - /dev/nvidiactl:/dev/nvidiactl
-      - /dev/nvidia-uvm:/dev/nvidia-uvm
-      - /dev/nvidia-modeset:/dev/nvidia-modeset
     volumes:
       - ./config:/config
-    shm_size: "2g"
+    shm_size: "16g"
     ports:
       - "47989:47989/tcp"
       - "47990:47990/tcp"

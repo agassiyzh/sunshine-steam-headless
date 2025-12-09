@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates wget curl gnupg lsb-release \
     xserver-xorg-core xinit x11-xserver-utils xserver-xorg-video-dummy \
     dbus-x11 pulseaudio pulseaudio-utils alsa-utils \
-    ca-certificates unzip fonts-noto lsof procps \
+    ca-certificates unzip fonts-noto lsof procps fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
 # Optional: install steam-installer if you want Steam in container
 # (uncomment if you need Steam inside)
-# RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y steam-installer && rm -rf /var/lib/apt/lists/*
+RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y steam-installer && rm -rf /var/lib/apt/lists/*
 
 # Download Sunshine deb from releases (if URL unavailable, replace with local deb)
 ARG SUNSHINE_DEB_URL="https://github.com/LizardByte/Sunshine/releases/latest/download/sunshine-ubuntu-24.04-amd64.deb"

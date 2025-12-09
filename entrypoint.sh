@@ -1,6 +1,39 @@
 #!/bin/bash
 set -euo pipefail
 
+
+# --- 自動安裝與宿主機相同版本的 NVIDIA 驅動 ---
+# if command -v nvidia-smi >/dev/null 2>&1; then
+#   HOST_DRIVER_VERSION=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -n1)
+#   echo "[entrypoint] 宿主機 NVIDIA 驅動版本: $HOST_DRIVER_VERSION"
+#   # 檢查容器內驅動版本
+#   if modinfo nvidia 2>/dev/null | grep -q "version: *$HOST_DRIVER_VERSION"; then
+#     echo "[entrypoint] 容器內已安裝相同版本 NVIDIA 驅動 ($HOST_DRIVER_VERSION)"
+#   else
+#     echo "[entrypoint] 容器內未安裝 NVIDIA 驅動或版本不符，開始安裝..."
+#     # 下載對應版本驅動，優先中國鏡像，失敗則回退官方 US 站點
+#     DRIVER_RUN="NVIDIA-Linux-x86_64-$HOST_DRIVER_VERSION.run"
+#     TUNA_URL="https://mirrors.tuna.tsinghua.edu.cn/nvidia/driver/$DRIVER_RUN"
+#     US_URL="https://us.download.nvidia.com/XFree86/Linux-x86_64/$HOST_DRIVER_VERSION/$DRIVER_RUN"
+#     echo "[entrypoint] 嘗試從 TUNA 清華鏡像下載 NVIDIA 驅動... ($TUNA_URL)"
+#     if wget -O "/tmp/$DRIVER_RUN" "$TUNA_URL"; then
+#       echo "[entrypoint] 成功從 TUNA 鏡像下載 NVIDIA 驅動。"
+#     else
+#       echo "[entrypoint] TUNA 鏡像下載失敗，回退官方 US 站點... ($US_URL)"
+#       wget -O "/tmp/$DRIVER_RUN" "$US_URL"
+#     fi
+#     chmod +x "/tmp/$DRIVER_RUN"
+#     # 安裝 kernel headers (假設基於 Debian/Ubuntu)
+#     apt-get update && apt-get install -y linux-headers-$(uname -r) || true
+#     # 安裝驅動（無互動、無 X、允許覆蓋）
+#     sh "/tmp/$DRIVER_RUN" --silent --no-questions --disable-nouveau --no-x-check --no-kernel-module || true
+#     rm -f "/tmp/$DRIVER_RUN"
+#     echo "[entrypoint] NVIDIA 驅動安裝完成（如有錯誤請檢查 kernel headers 與特權模式）"
+#   fi
+# else
+#   echo "[entrypoint] 無法偵測宿主機 NVIDIA 驅動，請確認 nvidia-smi 可用。"
+# fi
+
 echo "[entrypoint] Starting dbus if needed..."
 if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
   dbus-daemon --system --fork || true
