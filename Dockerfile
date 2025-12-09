@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates wget curl gnupg lsb-release \
     xserver-xorg-core xinit x11-xserver-utils xserver-xorg-video-dummy \
     dbus-x11 pulseaudio pulseaudio-utils alsa-utils \
+    libevdev2 libminiupnpc17 libayatana-appindicator3-1 libnotify4 \
     ca-certificates unzip fonts-noto lsof procps fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
@@ -17,27 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # (uncomment if you need Steam inside)
 RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y steam-installer && rm -rf /var/lib/apt/lists/*
 
-# Download, install, and verify Sunshine
+# Download and install Sunshine
 RUN set -eux; \
     wget -O /tmp/sunshine.deb "${SUNSHINE_DEB_URL}"; \
-    \
-    echo "--- Listing contents of sunshine.deb ---"; \
-    dpkg -c /tmp/sunshine.deb; \
-    echo "----------------------------------------"; \
-    \
-    # Attempt to install, this may fail due to missing dependencies
-    dpkg -i /tmp/sunshine.deb || true; \
-    \
-    # Fix missing dependencies and finish the installation
-    apt-get update; \
-    apt-get -f install -y --no-install-recommends; \
-    \
-    # Verify that sunshine was installed correctly and is executable
-    echo "--- Verifying sunshine installation ---"; \
-    ls -l /usr/bin/sunshine; \
-    /usr/bin/sunshine --version; \
-    \
-    # Clean up
+    dpkg -i /tmp/sunshine.deb; \
     rm /tmp/sunshine.deb
 
 
