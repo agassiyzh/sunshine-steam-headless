@@ -11,6 +11,8 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - ./config:/config
+      - ./steam-home:/home/steam
+      - /etc/localtime:/etc/localtime:ro
     shm_size: "16g"
     ports:
       - "47989:47989/tcp"

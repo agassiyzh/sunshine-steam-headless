@@ -64,7 +64,7 @@ jobs:
       # buildx 已經將映像導出到本地 docker，直接用 tag
       - name: Tag image for test
         run: |
-          docker tag ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest sunshine-test:ci
+          docker tag latest sunshine-test:ci || docker tag ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest sunshine-test:ci || true
 
       - name: Run container as steam user
         run: |
