@@ -17,18 +17,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # (uncomment if you need Steam inside)
 RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y steam-installer && rm -rf /var/lib/apt/lists/*
 
-# Download and install Sunshine deb from releases
-ARG SUNSHINE_DEB_URL="https://github.com/LizardByte/Sunshine/releases/latest/download/sunshine-ubuntu-24.04-amd64.deb"
+# Download, install, and verify Sunshine
 RUN set -eux; \
     wget -O /tmp/sunshine.deb "${SUNSHINE_DEB_URL}"; \
+    \
     echo "--- Listing contents of sunshine.deb ---"; \
-    dpkg -c /tmp/sunshine.deb || echo "dpkg -c failed, continuing..."; \
+    dpkg -c /tmp/sunshine.deb; \
     echo "----------------------------------------"; \
-    dpkg -i /tmp/sunshine.deb || apt-get -f install -y; \
+    \
+    # Attempt to install, this may fail due to missing dependencies
+    dpkg -i /tmp/sunshine.deb || true; \
+    \
+    # Fix missing dependencies and finish the installation
+    apt-get update; \
+    apt-get -f install -y --no-install-recommends; \
+    \
+    # Verify that sunshine was installed correctly and is executable
+    echo "--- Verifying sunshine installation ---"; \
+    ls -l /usr/bin/sunshine; \
+    /usr/bin/sunshine --version; \
+    \
+    # Clean up
     rm /tmp/sunshine.deb
-
-# Verify that sunshine was installed correctly and is executable
-RUN ls -l /usr/bin/sunshine && /usr/bin/sunshine --version
 
 
 
