@@ -94,7 +94,7 @@ if [ ! -x "$SUNSHINE_CMD" ]; then
 fi
 
 # Sunshine will create its config under /config if missing
-"$SUNSHINE_CMD" /config
+"$SUNSHINE_CMD" /config/sunshine.conf
 
 # If sunshine exits, keep container alive for debugging
 sleep infinity
