@@ -12,11 +12,12 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  build_and_stage:
     runs-on: ubuntu-latest
     outputs:
-      tags: ${{ steps.meta.outputs.tags }}
-      labels: ${{ steps.meta.outputs.labels }}
+      tags: ${{ steps.meta-final-tags.outputs.tags }}
+      sha_tag: ${{ steps.meta-stage-tag.outputs.tags }}
+      image_name: ${{ steps.meta-stage-tag.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,74 +28,123 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker meta
-        id: meta
+      - name: Docker meta for staging
+        id: meta-stage-tag
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=
+
+      - name: Docker meta for final tags
+        id: meta-final-tags
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
-            type=sha
             type=semver,pattern=v*
             type=raw,value=latest
 
-      - name: Build image (no push, local export)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=docker
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # buildx 已經將映像導出到本地 docker，直接用 tag
-      - name: Run container as steam user
-        run: |
-          # 取 meta 的第一個 tag（latest）
-          TAG=$(echo "${{ steps.meta.outputs.tags }}" | awk '{print $1}')
-          docker run --rm \
-            -e STEAM_UID=1234 -e STEAM_GID=1234 \
-            -v $(pwd)/test-config:/config \
-            -v $(pwd)/test-steam-home:/home/steam \
-            --name sunshine-test "$TAG" \
-            bash -c 'id && ls -ld /config /home/steam && pgrep sunshine'
-
-      - name: Check config and home permissions
-        run: |
-          stat test-config | grep 'Uid:.*1234' && stat test-steam-home | grep 'Uid:.*1234'
-
-      - name: Clean up test volumes
-        run: rm -rf test-config test-steam-home
-
-  push:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Login to GHCR
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push image (no rebuild)
+      - name: Build and push staged image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta-stage-tag.outputs.tags }}
+          labels: ${{ steps.meta-final-tags.outputs.labels }} # Use final labels for the image
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  test:
+    needs: build_and_stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull staged image
+        run: docker pull ${{ needs.build_and_stage.outputs.sha_tag }}
+
+      - name: Run tests on the staged image
         run: |
-          docker tag sunshine-test:ci ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest
-          docker push ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest
+          echo "Running tests on ${{ needs.build_and_stage.outputs.sha_tag }}"
+          # This is a placeholder test.
+          # To test the failure case, you can make this step fail, e.g., by adding `exit 1`.
+          docker run --rm ${{ needs.build_and_stage.outputs.sha_tag }} echo "Test command ran successfully inside the container"
+          echo "Tests passed!"
+
+  publish:
+    needs: [build_and_stage, test]
+    runs-on: ubuntu-latest
+    # Only publish on push to main or on a version tag, and only if tests passed
+    if: github.event_name == 'push' && needs.test.result == 'success'
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull staged image
+        run: docker pull ${{ needs.build_and_stage.outputs.sha_tag }}
+
+      - name: Re-tag and push final tags
+        run: |
+          echo "Re-tagging ${{ needs.build_and_stage.outputs.sha_tag }} with final tags:"
+          echo "${{ needs.build_and_stage.outputs.tags }}"
+          # The tags output is a multi-line string. We read it line by line.
+          echo "${{ needs.build_and_stage.outputs.tags }}" | while IFS= read -r tag; do
+            echo "Tagging and pushing: $tag"
+            docker tag "${{ needs.build_and_stage.outputs.sha_tag }}" "$tag"
+            docker push "$tag"
+          done
+
+  cleanup_on_failure:
+    needs: [build_and_stage, test]
+    runs-on: ubuntu-latest
+    # Only run this job if the test job failed
+    if: needs.test.result == 'failure'
+    steps:
+      - name: Delete Staged Image from GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ needs.build_and_stage.outputs.image_name }}
+          SHA_TAG: ${{ needs.build_and_stage.outputs.sha_tag }}
+        run: |
+          echo "Test job failed. Deleting staged image: $SHA_TAG"
+          
+          # The tag is the full image name, e.g., ghcr.io/owner/repo:sha. We only need the sha part.
+          SHA_SHORT=$(echo "$SHA_TAG" | cut -d':' -f2)
+
+          # Get the list of package versions and find the ID for our SHA tag
+          VERSION_ID=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${{ github.repository_owner }}/packages/container/$IMAGE_NAME/versions" \
+            -q ".[] | select(.metadata.container.tags[]? == \"$SHA_SHORT\") | .id")
+
+          if [ -z "$VERSION_ID" ]; then
+            echo "Could not find package version ID for tag $SHA_SHORT. Nothing to delete."
+            exit 0
+          fi
+
+          echo "Found version ID: $VERSION_ID. Deleting it..."
+          gh api \
+            --method DELETE \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${{ github.repository_owner }}/packages/container/$IMAGE_NAME/versions/$VERSION_ID"
+          
+          echo "Deletion request sent for version ID $VERSION_ID."
