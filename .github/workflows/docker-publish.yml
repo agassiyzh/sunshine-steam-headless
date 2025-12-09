@@ -1,26 +1,4 @@
-  test-image:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Pull image (latest)
-        run: docker pull ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest
-
-      - name: Run container as steam user
-        run: |
-          docker run --rm \
-            -e STEAM_UID=1234 -e STEAM_GID=1234 \
-            -v $(pwd)/test-config:/config \
-            -v $(pwd)/test-steam-home:/home/steam \
-            --name sunshine-test ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest \
-            bash -c 'id && ls -ld /config /home/steam && ps aux | grep sunshine'
-
-      - name: Check config and home permissions
-        run: |
-          stat test-config | grep 'Uid:.*1234' && stat test-steam-home | grep 'Uid:.*1234'
-
-      - name: Clean up test volumes
-        run: rm -rf test-config test-steam-home
-name: Build and publish Docker image
+name: Build, test and publish Docker image
 
 on:
   push:
@@ -34,7 +12,44 @@ permissions:
   packages: write
 
 jobs:
-  build-and-push:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=semver,pattern=v*
+            type=raw,value=latest
+
+      - name: Build image (no push, local export)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=docker
+
+  test:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,6 +61,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # buildx 已經將映像導出到本地 docker，直接用 tag
+      - name: Tag image for test
+        run: |
+          docker tag ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest sunshine-test:ci
+
+      - name: Run container as steam user
+        run: |
+          docker run --rm \
+            -e STEAM_UID=1234 -e STEAM_GID=1234 \
+            -v $(pwd)/test-config:/config \
+            -v $(pwd)/test-steam-home:/home/steam \
+            --name sunshine-test sunshine-test:ci \
+            bash -c 'id && ls -ld /config /home/steam && ps aux | grep sunshine'
+
+      - name: Check config and home permissions
+        run: |
+          stat test-config | grep 'Uid:.*1234' && stat test-steam-home | grep 'Uid:.*1234'
+
+      - name: Clean up test volumes
+        run: rm -rf test-config test-steam-home
+
+  push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Login to GHCR
         uses: docker/login-action@v2
         with:
@@ -53,22 +96,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags/labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless
-          tags: |
-            type=ref,event=branch
-            type=sha
-            type=semver,pattern=v*
-            type=raw,value=latest
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      - name: Push image (no rebuild)
+        run: |
+          docker tag sunshine-test:ci ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest
+          docker push ghcr.io/${{ github.repository_owner }}/sunshine-steam-headless:latest
