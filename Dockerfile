@@ -21,6 +21,9 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y steam-i
 ARG SUNSHINE_DEB_URL="https://github.com/LizardByte/Sunshine/releases/latest/download/sunshine-ubuntu-24.04-amd64.deb"
 RUN set -eux; \
     wget -O /tmp/sunshine.deb "${SUNSHINE_DEB_URL}"; \
+    echo "--- Listing contents of sunshine.deb ---"; \
+    dpkg -c /tmp/sunshine.deb || echo "dpkg -c failed, continuing..."; \
+    echo "----------------------------------------"; \
     dpkg -i /tmp/sunshine.deb || apt-get -f install -y; \
     rm /tmp/sunshine.deb
 
