@@ -29,10 +29,6 @@ RUN set -eux; \
 # 僅安裝 gosu，動態建用戶與目錄交由 entrypoint.sh 處理
 RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
 
-
-# 安裝 gosu 用於切換用戶
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
-
 # Copy xorg config and entrypoint
 COPY xorg.conf /etc/X11/xorg.conf
 COPY entrypoint.sh /entrypoint.sh

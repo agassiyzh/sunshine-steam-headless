@@ -80,8 +80,17 @@ echo "[entrypoint] DISPLAY=$DISPLAY"
 
 # Start Sunshine pointing to /config
 echo "[entrypoint] Starting Sunshine..."
+SUNSHINE_CMD="/usr/bin/sunshine"
+
+# Check if Sunshine is installed and executable
+if [ ! -x "$SUNSHINE_CMD" ]; then
+    echo "[entrypoint] ERROR: Sunshine executable not found or not executable at $SUNSHINE_CMD."
+    echo "[entrypoint] Please check if the Sunshine .deb package was installed correctly in the Dockerfile."
+    sleep infinity # Keep container alive for debugging
+fi
+
 # Sunshine will create its config under /config if missing
-sunshine -c /config
+"$SUNSHINE_CMD" -c /config
 
 # If sunshine exits, keep container alive for debugging
 sleep infinity
