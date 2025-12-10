@@ -51,15 +51,8 @@ if [ "$(id -u)" = "0" ]; then
   if ! id -u "$STEAM_USER" >/dev/null 2>&1; then
     useradd -m -u "$STEAM_UID" -g "$STEAM_GID" "$STEAM_USER" -s /bin/bash
   fi
-  # Dynamically create groups and add user for device access
-  if [ -n "${RENDER_GID:-}" ]; then
-    # Create a group with the GID if it doesn't exist
-    if ! getent group "$RENDER_GID" >/dev/null; then
-        groupadd -g "$RENDER_GID" render
-    fi
-    # Add the user to the group with that GID
-    usermod -a -G "$RENDER_GID" "$STEAM_USER"
-  fi
+  
+  # Add user to the standard 'video' group
   usermod -aG video "$STEAM_USER" || true
 
   # Change ownership of uinput to the steam user
