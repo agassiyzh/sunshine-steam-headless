@@ -74,6 +74,9 @@ if [ "$(id -u)" = "0" ]; then
   
   
 # 確保主目錄和 /config 權限正確
+  # Generate machine-id for dbus
+  dbus-uuidgen --ensure
+
   mkdir -p /run/dbus
   chown -R "$STEAM_UID:$STEAM_GID" "$STEAM_HOME" /config 2>/dev/null || true
   chown -R "$STEAM_UID:$STEAM_GID" /run/dbus 2>/dev/null || true
