@@ -53,6 +53,21 @@ if [ "$(id -u)" = "0" ]; then
   # Add user to the standard 'video' group
   usermod -aG video "$STEAM_USER" || true
 
+  # Handle RENDER_GID if passed (for /dev/dri access)
+  if [ -n "${RENDER_GID:-}" ]; then
+    echo "[init-setup] RENDER_GID provided: $RENDER_GID"
+    if ! getent group "$RENDER_GID" >/dev/null; then
+      echo "[init-setup] Creating group for GID $RENDER_GID"
+      groupadd -g "$RENDER_GID" render_custom
+    fi
+    usermod -aG "$RENDER_GID" "$STEAM_USER" || true
+  fi
+
+  # Add to input group if it exists (for /dev/uinput fallback)
+  if getent group input >/dev/null; then
+    usermod -aG input "$STEAM_USER" || true
+  fi
+
   # Change ownership of uinput to the steam user
   chown "$STEAM_UID:$STEAM_GID" /dev/uinput || true
   
