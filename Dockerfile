@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pulseaudio-utils \
     alsa-utils \
     libevdev2 \
+    libgl1 \
+    libegl1 \
     libminiupnpc17 \
     libayatana-appindicator3-1 \
     libnotify4 \

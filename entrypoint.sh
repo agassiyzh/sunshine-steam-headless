@@ -113,6 +113,22 @@ if [ "$(id -u)" = "0" ]; then
   dbus-uuidgen --ensure
 
   mkdir -p /run/dbus
+  
+  # Ensure Sunshine config exists and forces X11 capture (fixes GL error [00000502])
+  if [ ! -f /config/sunshine.conf ]; then
+      echo "[init-setup] Creating default sunshine.conf with capture = x11"
+      echo "capture = x11" > /config/sunshine.conf
+  else
+      # If config exists, ensure capture is set to x11 to avoid EGL issues
+      if ! grep -q "capture = x11" /config/sunshine.conf; then
+          echo "[init-setup] Forcing capture = x11 in existing sunshine.conf"
+          # Remove existing capture line if present
+          sed -i '/^capture =/d' /config/sunshine.conf
+          echo "capture = x11" >> /config/sunshine.conf
+      fi
+  fi
+
+  chown -R "$STEAM_UID:$STEAM_GID" "$STEAM_HOME" /config 2>/dev/null || true
   chown -R "$STEAM_UID:$STEAM_GID" "$STEAM_HOME" /config 2>/dev/null || true
   chown -R "$STEAM_UID:$STEAM_GID" /run/dbus 2>/dev/null || true
   
