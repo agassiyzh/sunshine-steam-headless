@@ -6,8 +6,8 @@ Before=headless-xorg.service pulseaudio.service sunshine.service systemd-user-se
 Type=oneshot
 ExecStart=/usr/local/bin/init-setup.sh
 RemainAfterExit=yes
-StandardOutput=journal
-StandardError=journal
+StandardOutput=journal+console
+StandardError=journal+console
 
 [Install]
 WantedBy=multi-user.target

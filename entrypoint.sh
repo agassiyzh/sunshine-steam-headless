@@ -34,8 +34,6 @@ set -euo pipefail
 #   echo "[entrypoint] 無法偵測宿主機 NVIDIA 驅動，請確認 nvidia-smi 可用。"
 # fi
 
-echo "[entrypoint] Starting pulseaudio (system-less)..."
-pulseaudio --start || true
 
 
 # 根據環境變數動態建立 steam 用戶並切換
@@ -65,6 +63,6 @@ if [ "$(id -u)" = "0" ]; then
   chown -R "$STEAM_UID:$STEAM_GID" "$STEAM_HOME" /config 2>/dev/null || true
   chown -R "$STEAM_UID:$STEAM_GID" /run/dbus 2>/dev/null || true
   
-  echo "[init-setup] Initialization complete."
+  echo "[init-setup] Initialization complete." > /dev/console
 fi
 
