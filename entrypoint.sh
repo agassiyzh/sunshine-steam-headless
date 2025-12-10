@@ -51,6 +51,11 @@ if [ "$(id -u)" = "0" ]; then
   if ! id -u "$STEAM_USER" >/dev/null 2>&1; then
     useradd -m -u "$STEAM_UID" -g "$STEAM_GID" "$STEAM_USER" -s /bin/bash
   fi
+  # Add user to supplementary groups for device access.
+  usermod -aG video "$STEAM_USER" || true
+  usermod -aG render "$STEAM_USER" || true
+  usermod -aG input "$STEAM_USER" || true
+  
   # 確保主目錄和 /config 權限正確
   mkdir -p /run/dbus
   chown -R "$STEAM_UID:$STEAM_GID" "$STEAM_HOME" /config 2>/dev/null || true
