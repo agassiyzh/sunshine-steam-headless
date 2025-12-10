@@ -1,0 +1,13 @@
+[Unit]
+Description=Initialize Sunshine environment (NVIDIA drivers, steam user)
+Before=headless-xorg.service pulseaudio.service sunshine.service systemd-user-sessions.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/init-setup.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

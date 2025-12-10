@@ -1,0 +1,16 @@
+[Unit]
+Description=PulseAudio Sound Server
+After=init-setup.service
+Wants=init-setup.service
+
+[Service]
+Type=simple
+User=steam
+ExecStart=/usr/bin/pulseaudio --daemonize=no --log-target=journal
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -47,14 +47,39 @@ RUN if [ "$INSTALL_STEAM" = "true" ]; then \
     && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# Copy xorg config and entrypoint
+# Install systemd
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    systemd \
+    systemd-sysv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Config systemd
+RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
+    && rm -f /etc/systemd/system/*.wants/* \
+    && rm -f /lib/systemd/system/local-fs.target.wants/* \
+    && rm -f /lib/systemd/system/sockets.target.wants/*udev* \
+    && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
+    && rm -f /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup* \
+    && rm -f /lib/systemd/system/systemd-update-utmp*
+
+# Copy xorg config and entrypoint (now init-setup)
 COPY xorg.conf /etc/X11/xorg.conf
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/init-setup.sh
+RUN chmod +x /usr/local/bin/init-setup.sh
+
+# Copy systemd services
+COPY services/init-setup.service /etc/systemd/system/
+COPY services/headless-xorg.service /etc/systemd/system/
+COPY services/pulseaudio.service /etc/systemd/system/
+COPY services/sunshine.service /etc/systemd/system/
+
+# Enable services
+RUN systemctl enable init-setup.service headless-xorg.service pulseaudio.service sunshine.service
 
 # Expose Sunshine ports
 EXPOSE 47989/tcp 47990/tcp 47998/udp 47999/udp
 
 VOLUME ["/config"]
+STOPSIGNAL SIGRTMIN+3
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/sbin/init"]
