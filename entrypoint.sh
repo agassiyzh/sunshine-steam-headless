@@ -36,6 +36,41 @@ set -euo pipefail
 
 
 
+# --- Auto-Configure NVIDIA BusID for Xorg ---
+if command -v nvidia-smi >/dev/null 2>&1; then
+  echo "[init-setup] nvidia-smi detected. Checking for GPU..."
+  # Get BusID in format 0000:01:00.0
+  BUS_ID_HEX=$(nvidia-smi --query-gpu=pci.bus_id --format=csv,noheader | head -n1)
+  
+  if [ -n "$BUS_ID_HEX" ]; then
+    echo "[init-setup] Found NVIDIA GPU at $BUS_ID_HEX"
+    
+    # Parse Hex values (Domain:Bus:Device.Function) e.g., 0000:01:00.0
+    BUS_HEX=$(echo "$BUS_ID_HEX" | cut -d: -f2)
+    DEV_HEX=$(echo "$BUS_ID_HEX" | cut -d: -f3 | cut -d. -f1)
+    FUNC_HEX=$(echo "$BUS_ID_HEX" | cut -d. -f2)
+    
+    # Convert to Decimal
+    BUS_DEC=$((16#$BUS_HEX))
+    DEV_DEC=$((16#$DEV_HEX))
+    FUNC_DEC=$((16#$FUNC_HEX))
+    
+    NEW_BUSID="PCI:$BUS_DEC:$DEV_DEC:$FUNC_DEC"
+    echo "[init-setup] Converting to Xorg BusID: $NEW_BUSID"
+    
+    # Update xorg.conf (replace any existing BusID line)
+    if [ -f /etc/X11/xorg.conf ]; then
+       sed -i "s|.*BusID.*|    BusID \"$NEW_BUSID\"|" /etc/X11/xorg.conf
+       echo "[init-setup] Updated /etc/X11/xorg.conf with BusID $NEW_BUSID"
+    else
+       echo "[init-setup] Warning: /etc/X11/xorg.conf not found."
+    fi
+  else
+    echo "[init-setup] nvidia-smi found no GPUs."
+  fi
+else
+  echo "[init-setup] nvidia-smi not found. Skipping BusID auto-configuration."
+fi
 # 根據環境變數動態建立 steam 用戶並切換
 STEAM_UID=${STEAM_UID:-568}
 STEAM_GID=${STEAM_GID:-568}
