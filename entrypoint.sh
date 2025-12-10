@@ -53,14 +53,18 @@ if [ "$(id -u)" = "0" ]; then
   fi
   # Dynamically create groups and add user for device access
   if [ -n "${RENDER_GID:-}" ]; then
-    groupadd -g "$RENDER_GID" render || echo "Group 'render' or GID '$RENDER_GID' already exists."
-    usermod -aG render "$STEAM_USER"
-  fi
-  if [ -n "${INPUT_GID:-}" ]; then
-    groupadd -g "$INPUT_GID" input || echo "Group 'input' or GID '$INPUT_GID' already exists."
-    usermod -aG input "$STEAM_USER"
+    # Create a group with the GID if it doesn't exist
+    if ! getent group "$RENDER_GID" >/dev/null; then
+        groupadd -g "$RENDER_GID" render
+    fi
+    # Add the user to the group with that GID
+    usermod -a -G "$RENDER_GID" "$STEAM_USER"
   fi
   usermod -aG video "$STEAM_USER" || true
+
+  # Change ownership of uinput to the steam user
+  chown "$STEAM_UID:$STEAM_GID" /dev/uinput || true
+  
   
   
   # 確保主目錄和 /config 權限正確

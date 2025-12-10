@@ -7,10 +7,9 @@ services:
     runtime: nvidia
     environment:
       - DISPLAY=:0
-      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_VISIBLE_DEVICES=<your-nvidia-gpu-uuid>
       - NVIDIA_DRIVER_CAPABILITIES=all
       - RENDER_GID=${RENDER_GID}
-      - INPUT_GID=${INPUT_GID}
 
     volumes:
       - ./config:/config
