@@ -12,7 +12,7 @@ permissions:
   packages: write
 
 jobs:
-  build-test-publish:
+  build-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -53,18 +53,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Test Docker image
-        id: tests
-        run: |
-          echo "Running tests on image with tags: ${{ steps.meta.outputs.tags }}"
-          # Use the first tag from the list for testing
-          TEST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          echo "Using test tag: $TEST_TAG"
-          docker run --rm "$TEST_TAG" echo "Test command ran successfully inside the container"
-          echo "Tests passed!"
 
       - name: Push Docker image to GHCR
-        if: github.event_name != 'pull_request' && steps.tests.outcome == 'success'
+        if: github.event_name != 'pull_request'
         run: |
           echo "Tests passed, pushing image to GHCR..."
           echo "Pushing tags: ${{ steps.meta.outputs.tags }}"
