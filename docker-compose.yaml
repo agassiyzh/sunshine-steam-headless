@@ -9,6 +9,8 @@ services:
       - DISPLAY=:0
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
+      - RENDER_GID=${RENDER_GID}
+      - INPUT_GID=${INPUT_GID}
 
     volumes:
       - ./config:/config

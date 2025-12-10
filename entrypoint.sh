@@ -51,10 +51,17 @@ if [ "$(id -u)" = "0" ]; then
   if ! id -u "$STEAM_USER" >/dev/null 2>&1; then
     useradd -m -u "$STEAM_UID" -g "$STEAM_GID" "$STEAM_USER" -s /bin/bash
   fi
-  # Add user to supplementary groups for device access.
+  # Dynamically create groups and add user for device access
+  if [ -n "${RENDER_GID:-}" ]; then
+    groupadd -g "$RENDER_GID" render || echo "Group 'render' or GID '$RENDER_GID' already exists."
+    usermod -aG render "$STEAM_USER"
+  fi
+  if [ -n "${INPUT_GID:-}" ]; then
+    groupadd -g "$INPUT_GID" input || echo "Group 'input' or GID '$INPUT_GID' already exists."
+    usermod -aG input "$STEAM_USER"
+  fi
   usermod -aG video "$STEAM_USER" || true
-  usermod -aG render "$STEAM_USER" || true
-  usermod -aG input "$STEAM_USER" || true
+  
   
   # 確保主目錄和 /config 權限正確
   mkdir -p /run/dbus

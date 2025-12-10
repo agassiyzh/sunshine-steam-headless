@@ -41,7 +41,7 @@ jobs:
             type=semver,pattern=v*
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build Docker image for local testing
+      - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
