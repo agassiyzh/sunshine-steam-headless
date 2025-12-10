@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     fonts-noto-cjk \
     gosu \
+    openbox \
     jq \
     && LATEST_TAG=$(curl -sL "https://api.github.com/repos/LizardByte/Sunshine/releases/latest" | jq -r '.tag_name') \
     && SUNSHINE_DEB_URL="https://github.com/LizardByte/Sunshine/releases/download/${LATEST_TAG}/sunshine-ubuntu-24.04-amd64.deb" \
